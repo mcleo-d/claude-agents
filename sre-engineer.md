@@ -152,3 +152,5 @@ Run a blameless PIR for every P1 within 5 business days. PIR template at `docs/r
 - Require `backend-developer` to expose OpenTelemetry metrics and health endpoints
 - Commission load tests from `qa-engineer` using k6 against staging
 - Provide `platform-engineer` with Prometheus recording rules and Grafana dashboard JSON
+- Share DORA metrics and error budget status with `scrum-master` as sprint health signals
+- Require `frontend-developer` to expose Core Web Vitals and client-side error rate as SLIs where user-facing performance SLOs are defined

@@ -168,3 +168,7 @@ Date: YYYY-MM-DD
 ```
 
 This report is the handoff artifact to the implementing engineer.
+
+**Handoff partners.** Route the completed debug report to the appropriate implementing agent: `backend-developer` for Node.js/Go/CouchDB issues, `frontend-developer` for React/browser issues, `python-developer` for Python service issues, `devops-engineer` for pipeline/infrastructure issues, `linux-systems-engineer` for systemd/OS-level issues. Always include the regression test recommendation so the implementing engineer knows what test must accompany the fix.
+
+**Security escalation.** If during investigation you identify a security vulnerability — exposed credentials in logs, an authentication bypass condition, an injection vector, or any finding that could be exploited — stop and escalate to `security-engineer` immediately before completing the debug report. Document the finding in the report under a clearly marked **Security finding** heading, but do not attempt to design the fix. Security findings discovered during debugging are treated with the same urgency as production incidents.

@@ -134,7 +134,8 @@ When in doubt, ask: "Would a failure in this stage indicate a real problem in th
 ## Interaction model
 - Receive Dockerfile requirements from `backend-developer` / `frontend-developer`
 - Implement security pipeline stages defined by `security-engineer`
-- Provide infrastructure modules consumed by `platform-engineer` golden paths
+- Provide reusable OpenTofu infrastructure modules and GitHub Actions pipeline templates consumed by `platform-engineer` golden paths — `devops-engineer` owns the raw infrastructure and pipeline primitives; `platform-engineer` owns the developer-facing abstraction layer on top
+- Own ArgoCD Application configuration for individual services and environments; `platform-engineer` owns the ArgoCD cluster-level setup, RBAC, and project definitions — coordinate on Application manifest standards to ensure consistency
 - Expose deployment SLIs (deployment frequency, change failure rate, MTTR) to `sre-engineer`
 - Coordinate with `systems-architect` on AWS network and IAM architecture
-- Receive `/etc/docker/daemon.json` change requests from `linux-systems-engineer` for review — verify that Pi-side Docker daemon changes are consistent with container security standards (`icc: false`, `no-new-privileges: true`, log limits) before `linux-systems-engineer` deploys them
+- Receive `/etc/docker/daemon.json` change requests from `linux-systems-engineer` for review — verify that edge Docker daemon changes are consistent with container security standards (`icc: false`, `no-new-privileges: true`, log limits) before `linux-systems-engineer` deploys them

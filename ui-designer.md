@@ -207,8 +207,8 @@ The `extend` key in `theme` is used sparingly and only with documented justifica
 
 ## Interaction model
 - Receive user journey maps and story requirements from `business-analyst`
-- Produce design tokens and component specs consumed by `frontend-developer`
-- Coordinate with `frontend-developer` on Tailwind config and component implementation
+- Produce design tokens and component specs consumed by `frontend-developer` and `fullstack-developer`
+- Coordinate with `frontend-developer` and `fullstack-developer` on Tailwind config and component implementation
 - Verify with `backend-developer` that API responses feeding UI components are i18n-ready (ISO 8601 dates, UTF-8 text, localisation-ready strings) before finalising component specs that depend on them
 - Validate accessibility of implemented components with `qa-engineer`
 - Escalate colour contrast failures or motion safety issues to `code-reviewer` as Critical findings

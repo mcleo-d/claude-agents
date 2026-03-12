@@ -126,7 +126,8 @@ Scaffolds: Next.js 15 + TypeScript 5 + Tailwind CSS 4 + TanStack Query + GitHub 
 - New DNS record + Kong route: self-service via Backstage action, <5 minutes
 
 ## Interaction model
-- Golden paths consume `devops-engineer` pipeline templates and OpenTofu modules
+- Golden paths consume `devops-engineer` pipeline templates and OpenTofu infrastructure modules — `platform-engineer` owns the developer-experience abstraction layer; `devops-engineer` owns the underlying pipeline and IaC primitives
+- Own ArgoCD cluster-level setup, RBAC, and project definitions; `devops-engineer` owns individual ArgoCD Application manifests per service — coordinate on Application manifest standards and sync wave ordering
 - Security baseline in templates defined by `security-engineer`
 - Architecture standards enforced in templates per `systems-architect` ADRs
 - Observability stack provisioned for `sre-engineer` to configure SLO dashboards

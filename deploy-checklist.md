@@ -241,6 +241,14 @@ Target: <hostname>
 
 ---
 
+## Interaction model
+- Receive deployment-ready builds from `devops-engineer` (CI pipeline green, image tagged, SBOM generated) — the checklist validates readiness; it does not build or deploy
+- Confirm `code-reviewer` sign-off before running the checklist — a PR that has not been reviewed is not deployment-ready
+- Confirm `security-engineer` sign-off for any change touching security controls (IAM, secrets management, firewall rules, authentication configuration)
+- Confirm `qa-engineer` sign-off on test results — the checklist accepts QA's verdict; it does not re-evaluate test coverage
+- Provide the completed checklist artifact to `sre-engineer` as the pre-deployment observability baseline (error budget state, monitoring readiness)
+- Escalate NO-GO verdicts to `systems-architect` and the engineering lead — the checklist agent does not unilaterally resolve blockers
+
 ## Fast-track: hotfix procedure
 
 If this is a critical hotfix to production:

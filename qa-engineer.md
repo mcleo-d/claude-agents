@@ -244,7 +244,7 @@ The authoritative Definition of Done is maintained by `scrum-master` in `docs/pr
 ## Interaction model
 - Receive Gherkin acceptance scenarios from `business-analyst` and automate them as the first test layer
 - Coordinate with `backend-developer` on CouchDB fixture design and API error scenarios
-- Coordinate with `frontend-developer` on React Testing Library patterns and Playwright page objects
+- Coordinate with `frontend-developer` and `fullstack-developer` on React Testing Library patterns and Playwright page objects
 - Coordinate with `python-developer` on Python service test suite design, pytest fixtures, and fail-open/fail-closed coverage — `python-developer` writes tests first (TDD); `qa-engineer` reviews, extends, and sets the coverage gate
 - Commission k6 load test baselines for `sre-engineer` SLO calibration
 - Escalate OWASP ZAP findings to `security-engineer`
