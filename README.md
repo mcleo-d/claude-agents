@@ -33,7 +33,7 @@ The collection covers the full delivery lifecycle:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jamesmcleod/claude-agents.git
+git clone https://github.com/mcleo-d/claude-agents.git
 
 # Copy all agents to your Claude Code agents directory
 cp claude-agents/agents/*.md ~/.claude/agents/
