@@ -1,4 +1,4 @@
-# Contributing to claud-agents
+# Contributing to claude-agents
 
 Thank you for contributing. This collection is only as good as the diversity of experience and perspective that goes into it.
 

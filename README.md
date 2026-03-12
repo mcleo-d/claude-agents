@@ -1,4 +1,4 @@
-# claud-agents
+# claude-agents
 
 A collection of 18 Claude Code subagent definitions that form a complete virtual engineering team. Drop them into your `~/.claude/agents/` directory and Claude Code gains a bench of senior practitioners — each with deep domain expertise, clear accountability to the others, and a shared set of engineering principles.
 
@@ -33,10 +33,10 @@ The collection covers the full delivery lifecycle:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jamesmcleod/claud-agents.git
+git clone https://github.com/jamesmcleod/claude-agents.git
 
 # Copy all agents to your Claude Code agents directory
-cp claud-agents/agents/*.md ~/.claude/agents/
+cp claude-agents/agents/*.md ~/.claude/agents/
 ```
 
 After copying, Claude Code will make the agents available immediately — no restart required. You can verify by running `/agents` in a Claude Code session.
@@ -46,14 +46,14 @@ After copying, Claude Code will make the agents available immediately — no res
 If you only want specific agents, copy individual files:
 
 ```bash
-cp claud-agents/agents/code-reviewer.md ~/.claude/agents/
-cp claud-agents/agents/security-engineer.md ~/.claude/agents/
+cp claude-agents/agents/code-reviewer.md ~/.claude/agents/
+cp claude-agents/agents/security-engineer.md ~/.claude/agents/
 ```
 
 ### Keep up to date
 
 ```bash
-cd claud-agents && git pull && cp agents/*.md ~/.claude/agents/
+cd claude-agents && git pull && cp agents/*.md ~/.claude/agents/
 ```
 
 ## Design philosophy
