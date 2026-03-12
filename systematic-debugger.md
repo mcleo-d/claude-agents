@@ -123,24 +123,15 @@ Recommended fix:
 - Intermittent 502 from ALB: the target is returning a non-200 on the health check path, or the container is crashing after a short time — check ECS task restart count
 - SecretsManager access denied: the ECS task role is missing `secretsmanager:GetSecretValue` on the specific ARN — check the IAM policy with exact ARN matching, not wildcards
 
-### Python / ollama-proxy
-- Start with journald: `sudo journalctl -u ollama-proxy -n 50 --no-pager` — look for the full Python traceback, not just the last line
-- `SystemExit` at startup almost always means `PROXY_LISTEN_PORT` is unset, or `patterns.conf` / `classifier-prompt.txt` is missing, unreadable, or empty — check these three before anything else
-- `OSError: [Errno 98] Address already in use` — another process holds the proxy port; check `sudo ss -tlnp | grep <port>`
-- Unhandled exception in `do_POST` — Python's `BaseHTTPRequestHandler` silently swallows exceptions in request handlers unless explicitly logged; look for `Exception` log entries, not just the HTTP response code
-- Gate 1 false positive: check `patterns.conf` for overly broad patterns (e.g., single-word matches); the matched pattern and 100-char preview are logged as `BLOCKED` — read the log entry carefully before assuming a code bug
-- Gate 2 timeout: `PROXY_CLASSIFIER_TIMEOUT` may be too low for current hardware load; check whether Ollama is busy with a concurrent inference (`sudo journalctl -u ollama -n 20 --no-pager`); remember the proxy fails open on timeout — a timeout is not a block
-- Model swap latency: Gate 2 uses a different model than the primary agent; the first classifier call after any primary-model request forces a model swap (~7s); this is expected behaviour, not a bug
-- `num_ctx` not being capped: verify proxy is in the data path — `baseUrl` in `openclaw.json` must point to the proxy port, not `11434`; check proxy logs for `capped num_ctx` entries
-- `think: false` not taking effect: check Ollama version — `think` parameter requires Ollama v0.17.0+; verify with `ollama --version`
-- System message not being truncated: confirm `PROXY_MAX_SYSTEM_CHARS` is set in the service environment; `sudo systemctl show ollama-proxy | grep Environment`
-
-### systemd service debugging
-- Service fails to start: `sudo systemctl status ollama-proxy --no-pager` for the stopped reason; `sudo journalctl -u ollama-proxy -n 30 --no-pager` for the full startup log
-- Service starts then immediately exits: Python syntax error or import error — look for `SyntaxError` or `ModuleNotFoundError` in the journal
-- `Environment=` variables not set: check the service file with `sudo systemctl cat ollama-proxy` — compare against what `sudo systemctl show ollama-proxy | grep Environment` actually shows; a `daemon-reload` may have been missed after an edit
-- Service restarts in a loop: `Restart=always` with `RestartSec=5` means repeated crashes look like normal cycling; check the journal for the crash reason before assuming it's operational
-- `Requires=ollama.service` ordering: if Ollama is slow to start, the proxy may attempt to start before Ollama's socket is ready — check `sudo systemctl status ollama` first; `After=ollama.service` ensures ordering but not Ollama readiness
+### Python / systemd services
+- Start with journald: `sudo journalctl -u <service-name> -n 50 --no-pager` — read the full Python traceback, not just the last line; the root cause is almost always above the final `SystemExit` line
+- `SystemExit` at startup almost always means a required environment variable is unset or a required config file is missing, unreadable, or empty — audit the service's startup sequence for any `os.environ[]` or `open()` calls that are not guarded before anything else
+- `OSError: [Errno 98] Address already in use` — another process holds the port; check `sudo ss -tlnp | grep <port>` and identify the owner before restarting the service
+- Unhandled exception in a request handler — Python's `BaseHTTPRequestHandler` silently swallows exceptions raised inside `do_GET` / `do_POST` / etc. unless the handler explicitly logs them; absence of an HTTP error response does not mean the handler succeeded — look for `Exception` or `Traceback` log entries in the journal
+- Environment variable not visible to the running service: check the unit file with `sudo systemctl cat <service-name>` to see what is declared, then compare against `sudo systemctl show <service-name> | grep Environment` to see what systemd actually loaded; a missing `daemon-reload` after editing the unit file is the most common cause of the two differing
+- Service restarts in a loop: `Restart=always` with a short `RestartSec` makes repeated crashes look like normal cycling; check the journal for the crash reason (traceback or exit code) before assuming the service is healthy
+- Dependency ordering: `After=<other>.service` in the unit file ensures start ordering but does not guarantee the dependency is ready to serve requests; if the dependent service is slow to initialise, the Python service may fail its first connection attempt — check the dependency's status independently before concluding the Python code is at fault
+- Filter/classifier pipeline debugging (pattern: filter → classifier → forward): treat each stage as an independently observable unit — confirm the filter stage is receiving the request by checking its logs before inspecting classifier behaviour; confirm the classifier is being invoked by checking for its log entries; verify the final forwarded request reaches the downstream service; a timeout or error at one stage should not be assumed to propagate identically through all stages
 
 ### OpenTelemetry / tracing
 - Missing spans: the OpenTelemetry SDK must be initialised before any instrumented library is imported — check initialisation order

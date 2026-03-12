@@ -100,32 +100,30 @@ APPROVE | REQUEST_CHANGES | COMMENT
 - `_rev` handled in update/delete paths; 409 conflicts caught and handled
 - No direct CouchDB calls from the frontend — always via the API tier
 
-### Documentation (Markdown — docs/, config/README.md, AGENTS.md, CONTRIBUTING.md)
-This project is a reference deployment where documentation is a primary deliverable. Documentation PRs carry the same risk of introducing real values or breaking the placeholder contract as code PRs. Apply the following:
+### Documentation (Markdown — docs/, CONTRIBUTING.md, and project configuration documentation)
+Documentation PRs carry the same risk of introducing real values or breaking the placeholder contract as code PRs. Apply the following:
 
 - No real values anywhere in the change: hostnames, IP addresses, usernames, port numbers, credentials, or numeric security thresholds — any of these is a Critical finding
 - `<your-value>` placeholder convention: all site-specific values in non-template config files must use `<your-value>` format — no invented examples, no partial values, no inline comments revealing threshold reasoning
-- `config/README.md` file map: if any config file was added, removed, or renamed in this PR, the file map table must reflect it — a mismatch is a Major finding
+- Project configuration documentation (e.g. a file map table): if any config file was added, removed, or renamed in this PR, all relevant documentation tables and references must reflect it — a mismatch is a Major finding
 - Template convention: files named `*.template` contain only `<your-value>` placeholders; files without the `.template` suffix that are complete as-is must not have placeholders added
 - `detect-secrets` baseline: confirm the PR description or CI output confirms the scan passes — a baseline violation is a Critical finding
 - Relative links: all cross-document links use relative paths; verify referenced files exist and paths are correct — a broken link is a Minor finding
-- No injection pattern categories, signatures, or examples added to any committed file
-- No classifier prompt text reproduced in any committed file
-- Accuracy: documentation changes must be consistent with the code they describe — a doc that contradicts `proxy.py` behaviour or the deployed config is a Major finding
-- `AGENTS.md` invariants: if the PR touches `proxy.py` or config files, verify all invariants from `AGENTS.md` are satisfied in the change
+- No security-sensitive content (e.g. credentials, private keys, internal network topology, or security control details) in any committed file
+- Accuracy: documentation changes must be consistent with the code they describe — a doc that contradicts actual behaviour or the deployed configuration is a Major finding
+- Agent instructions file invariants: if the PR touches files governed by an agent instructions file (e.g. `AGENTS.md`), verify all stated invariants are satisfied by the change
 
-### Python (proxy.py and edge tooling)
-- `os.environ.get("PROXY_*", "<default>")` pattern enforced for every tunable constant — any hardcoded value is a Critical finding
-- `PROXY_LISTEN_PORT` must have no default; proxy must exit explicitly if unset
-- No injection patterns in `proxy.py` — they belong in `patterns.conf` only; any pattern literal in the source file is a Critical finding
+### Python
+- Environment variable configuration: `os.environ.get("APP_*", "<default>")` pattern (using your project's prefix convention) enforced for every tunable constant — any hardcoded connection string, credential, secret, or security threshold is a Critical finding
+- Required configuration with no safe default (e.g. a listen port or upstream URL) must have no default value; the application must exit explicitly and with a clear error message if the variable is unset
+- No hardcoded sensitive values anywhere in source — credentials, tokens, and thresholds belong in environment or secrets management, not in `.py` files
 - Type annotations on all function signatures (Python 3.9+ style: `list[str]`, `dict[str, int]`) — no `Any`
 - No bare `except:` — specific exception types only
-- No third-party library imports — stdlib only (`http.server`, `urllib.request`, `http.client`, `logging`, `os`, `re`)
-- Logging uses `logging.getLogger(__name__)` — no f-strings containing message content beyond a 100-character preview; no PII in logs
-- Gate ordering must be preserved: pattern matching (Gate 1) before LLM classifier (Gate 2) — never inverted
-- New tunables require: `PROXY_` prefix, `Environment=` placeholder in `ollama-proxy.service`, and documentation in `docs/04-docker-openclaw.md`
-- `config/README.md` file map updated for any new proxy-related file
-- Tests cover: happy path, each gate in isolation, fail-open behaviour (classifier timeout, 500 error, malformed response), `num_ctx` cap boundary, `think: false` injection, system message truncation boundary
+- No third-party libraries where stdlib suffices — flag any new dependency with licence, maintainer reputation, and CVE history; justify why stdlib is insufficient
+- Logging uses `logging.getLogger(__name__)` — no PII or sensitive data in log messages
+- For any filter or gate pipeline: the designed ordering must be preserved; an inversion or reordering is a Critical finding and requires explicit architectural justification in the PR description
+- New configuration variables require: a documented naming convention (e.g. a consistent prefix), a service unit placeholder if the project uses systemd or a comparable process supervisor, and a documentation update
+- Tests must cover: happy path, each filter/gate stage in isolation, fail-open and fail-closed behaviour for external calls (timeout, 5xx error, malformed response), and boundary conditions for any capped or bounded value
 
 ### OpenTofu / IaC
 - No hardcoded account IDs, credentials, or region strings

@@ -149,83 +149,83 @@ Store completed checklist in `docs/deployments/YYYY-MM-DD-<service>-<environment
 
 ---
 
-## Pi / edge deployment checklist
+## Edge / bare-metal deployment checklist
 
-Use this section instead of the cloud checklist above when deploying changes to the Raspberry Pi stack: `proxy.py`, systemd service files, kernel/SSH/firewall configuration, or Ollama/Docker settings.
+Use this section instead of the cloud checklist above when deploying changes to a Raspberry Pi, SBC, or other bare-metal Linux host. Applicable change types include: application service code, systemd unit files, kernel parameters, SSH/firewall configuration, or container runtime settings.
 
 ### Inputs required
 ```
-Change type: proxy.py | systemd service | kernel/SSH/UFW config | Docker daemon | model change
-Target: Raspberry Pi 5 (<hostname>)
+Change type: application service | systemd unit | kernel/SSH/firewall config | container runtime | dependency/model update
+Target host: <hostname or IP>
 Change ref: <Git commit SHA>
 Deployer: <GitHub username>
 ```
 
 ### 1. Pre-deployment — repository integrity
 
-- [ ] No real values in any committed file (hostnames, IPs, credentials, security thresholds) — `detect-secrets scan --baseline .secrets.baseline` passes with no new findings
-- [ ] No injection patterns added to `proxy.py` — patterns belong in `patterns.conf` only
-- [ ] `config/README.md` file map updated if files were added or removed
-- [ ] New sensitive files added to `.gitignore` with a `.template` equivalent
-- [ ] `code-reviewer` has signed off the change (Python review criteria applied for proxy changes)
+- [ ] No real values in any committed file (hostnames, IPs, credentials, tunable thresholds) — `detect-secrets scan --baseline .secrets.baseline` passes with no new findings
+- [ ] All sensitive runtime values are supplied via environment variables or secrets files excluded from version control — not hardcoded in source
+- [ ] Template equivalents (`.template` or `.example` files) exist for every secrets or config file listed in `.gitignore`
+- [ ] `config/README.md` (or equivalent config index) updated if files were added or removed
+- [ ] `code-reviewer` has signed off the change
 
 **STOP if any item above is NO — do not proceed.**
 
-### 2. Proxy changes (`proxy.py`)
+### 2. Application service changes
 
-*(Skip if change does not touch `proxy.py`)*
+*(Skip if this change does not touch application service code)*
 
-- [ ] All new tunables use `os.environ.get("PROXY_*", "<default>")` — no hardcoded values
-- [ ] `PROXY_LISTEN_PORT` still has no default — proxy still exits if unset
-- [ ] `Environment=` placeholder added to `ollama-proxy.service` for any new tunable
-- [ ] New tunable documented in `docs/04-docker-openclaw.md`
-- [ ] Gate ordering preserved: Gate 1 (pattern matching) before Gate 2 (classifier)
-- [ ] Fail-open behaviour for classifier errors unchanged (or change explicitly reviewed by `security-engineer`)
-- [ ] pytest suite passes: `pytest tests/proxy/ --cov` — ≥80% line coverage
-- [ ] Fail-open paths have explicit named tests (coverage metric alone is insufficient)
+- [ ] All runtime tunables sourced from environment variables with documented defaults — no hardcoded values in source
+- [ ] Any tunable that must be explicitly set (no safe default) causes the service to exit on startup if unset — verified in code
+- [ ] Corresponding `Environment=` or `EnvironmentFile=` entries added to the systemd unit for any new tunable
+- [ ] New tunables documented in the project runbook
+- [ ] Test suite passes locally and in CI — `<test-runner> tests/` with coverage at or above project threshold
+- [ ] Security-sensitive code paths (auth, input validation, privilege boundaries) have explicit named tests — coverage metric alone is insufficient
 
 ### 3. systemd service changes
 
-*(Skip if change does not touch service unit files)*
+*(Skip if this change does not touch service unit files)*
 
-- [ ] Drop-in files used for upstream service overrides — upstream unit files not modified
-- [ ] `After=` and `Requires=` dependency declarations correct
-- [ ] Service file deployed: `sudo systemctl daemon-reload`
-- [ ] Service restarts cleanly: `sudo systemctl restart ollama-proxy && sudo systemctl status ollama-proxy`
-- [ ] No `<your-value>` placeholders remain unfilled in the deployed file (only in the repo template)
+- [ ] Drop-in files used for upstream service overrides — upstream vendor unit files not modified directly
+- [ ] `After=` and `Requires=` dependency declarations are correct and complete
+- [ ] Deployed unit file contains no unfilled template placeholders (e.g. `<your-value>`) — placeholders belong only in the repo template
+- [ ] `sudo systemctl daemon-reload` run after copying unit files to the host
+- [ ] Service restarts cleanly: `sudo systemctl restart <service-name> && sudo systemctl is-active <service-name>`
 
-### 4. Security configuration changes (SSH, UFW, sysctl, fail2ban)
+### 4. Security configuration changes (SSH, firewall, sysctl, fail2ban)
 
-*(Skip if change does not touch security config)*
+*(Skip if this change does not touch security config)*
 
 - [ ] `security-engineer` has reviewed and approved the change
-- [ ] No existing security control weakened
-- [ ] Rationale documented in `docs/03-security-hardening.md`
-- [ ] UFW: ALLOW rule appears before DENY rule for the same port
-- [ ] UFW: Ollama port 11434 is NOT exposed to the container bridge
-- [ ] UFW: OpenClaw port 18789 is NOT exposed externally
-- [ ] SSH: `sudo sshd -T` output verified — no unintended parameter changes
-- [ ] Verification command confirmed working on the Pi
+- [ ] No existing security control is weakened by this change
+- [ ] Rationale documented in the project security runbook
+- [ ] Firewall: ALLOW rules verified to appear before DENY rules for the same port where rule ordering matters
+- [ ] Firewall: no internal-only service ports are exposed to external interfaces — verify with `sudo ufw status verbose` or equivalent
+- [ ] SSH: `sudo sshd -T` output reviewed — no unintended parameter regressions
+- [ ] Verification command for each changed control confirmed working on the target host before marking done
 
 ### 5. Rollback plan
 
-- [ ] Previous working state is recoverable: previous `proxy.py` version in git history; config files in git
-- [ ] Rollback procedure: `git checkout <previous-sha> -- <file>` then redeploy
-- [ ] If systemd service changes: `sudo systemctl daemon-reload && sudo systemctl restart <service>` known to recover
-- [ ] If UFW changes: `sudo ufw status` baseline recorded before change
+- [ ] Previous working state is recoverable: prior version of changed files in Git history
+- [ ] Rollback procedure documented: `git checkout <previous-sha> -- <file>` then redeploy via standard procedure
+- [ ] If systemd unit changed: `sudo systemctl daemon-reload && sudo systemctl restart <service-name>` confirmed to restore prior behaviour
+- [ ] If firewall rules changed: baseline output of `sudo ufw status verbose` (or equivalent) recorded before applying changes
+- [ ] Rollback estimated time: <N minutes>
+- [ ] Rollback decision owner identified for this deployment
 
 ### 6. Post-deployment verification
 
 ```
-T+0:   Service status clean — sudo systemctl status ollama-proxy ollama
-T+2:   Proxy responding — curl http://127.0.0.1:<proxy-port>/api/tags
-T+5:   Gate 1 test: inject a known pattern from patterns.conf → HTTP 400 returned
-T+5:   Gate 2 test: benign message → forwarded, SAFE verdict in journald
-T+10:  OpenClaw end-to-end: chat message via Telegram/UI → agent responds correctly
-T+10:  Check journald for any ERROR or unexpected WARNING entries
+T+0:   Service reports active/running — sudo systemctl status <service-name>
+T+2:   Service responds to a health or readiness probe — curl http://127.0.0.1:<port>/<health-path>
+T+5:   Smoke test: send a representative request and confirm the expected response is returned
+T+10:  Review journal for unexpected ERROR or WARNING entries — journalctl -u <service-name> -n 100
+T+15:  Confirm no other dependent services degraded — sudo systemctl status <dependency-names>
 ```
 
-### Go / No-Go verdict (Pi deployment)
+If any step above fails: initiate rollback immediately — do not wait to diagnose on the live host.
+
+### Go / No-Go verdict (edge deployment)
 
 ```
 Deployment readiness: GO | NO-GO
@@ -236,7 +236,7 @@ Items blocking (if NO-GO):
 Signed off by: deploy-checklist agent
 Date: YYYY-MM-DD HH:MM UTC
 Change ref: <sha>
-Target: Raspberry Pi 5
+Target: <hostname>
 ```
 
 ---

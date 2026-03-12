@@ -30,7 +30,7 @@ You are a senior QA engineer who owns the test strategy across the full stack. Y
 | Unit (Python) | pytest | MIT |
 | Component (React) | React Testing Library | MIT |
 | API integration | supertest (Node) / net/http/httptest (Go) | MIT / BSD |
-| Proxy integration | pytest + `http.client` / `unittest.mock` | MIT |
+| Python service | pytest + `unittest.mock` | MIT |
 | Accessibility | axe-core + @axe-core/playwright | MPL-2.0 |
 | E2E | Playwright | Apache 2.0 |
 | Load / performance | k6 (Grafana) | AGPL-3.0 |
@@ -161,68 +161,68 @@ export const options = {
 
 Load tests run against staging only; results published to `sre-engineer` for SLO baseline comparison.
 
-## Python proxy tests (pytest)
+## Python service tests (pytest)
 
-The ollama-proxy (`proxy.py`) has a clear, testable contract: given a request, either forward it modified or block it with HTTP 400. All proxy tests use pytest with stdlib mocking — no third-party HTTP libraries.
+A well-designed Python HTTP service or middleware has a clear, testable contract: given a request, it produces a defined response or side effect. All Python service tests use pytest with stdlib mocking — no third-party HTTP libraries required for unit tests.
 
 ### Test structure
 ```
 tests/
-  proxy/
-    test_gate1_pattern_matching.py   # Gate 1 in isolation
-    test_gate2_classifier.py         # Gate 2 in isolation
-    test_proxy_modifications.py      # num_ctx cap, think=false, system truncation
-    test_fail_open.py                # classifier errors must always forward
-    test_env_config.py               # env var loading, missing PROXY_LISTEN_PORT exits
+  <service-name>/
+    test_<stage_one>.py      # first filter/stage in isolation
+    test_<stage_two>.py      # second filter/stage in isolation
+    test_modifications.py    # request/response transformation logic
+    test_fail_open.py        # external service errors must not cause unintended blocking
+    test_env_config.py       # env var loading, required vars cause SystemExit if missing
 ```
 
-### Required test coverage (every proxy change must satisfy all of these)
+### Required test coverage (every service change must satisfy all of these)
 
-**Gate 1 — pattern matching**
-- Request matching a pattern → HTTP 400, JSON body, BLOCKED in logs
-- Request not matching any pattern → forwarded to Gate 2
-- `patterns.conf` missing at startup → proxy refuses to start
-- `patterns.conf` empty at startup → proxy refuses to start
-- Pattern matching is case-insensitive
+**Per filter/stage — isolation tests**
+- Input that triggers a rejection/block → correct HTTP error code, structured response body, appropriate log entry
+- Input that passes the stage → forwarded to the next stage or upstream
+- Required configuration file missing at startup → service refuses to start
+- Required configuration file empty at startup → service refuses to start (if empty is invalid)
+- Any case-insensitive matching is tested with mixed-case inputs
 
-**Gate 2 — LLM classifier**
-- Classifier returns `UNSAFE` → HTTP 400
-- Classifier returns `SAFE` → request forwarded
-- Classifier timeout → **fail open** (request forwarded, WARNING logged)
-- Classifier returns HTTP 500 → **fail open**
-- Classifier returns unexpected verdict (not `SAFE`/`UNSAFE`) → **fail open**, WARNING logged
-- `classifier-prompt.txt` missing at startup → proxy refuses to start
+**External service calls — fail-open / fail-closed paths**
+- External service returns a success verdict → expected action taken
+- External service returns a rejection verdict → expected action taken
+- External service timeout → document and test the intended behaviour (fail open or fail closed); log at WARNING or above
+- External service returns HTTP 5xx → document and test the intended behaviour; log at WARNING or above
+- External service returns an unexpected or malformed response → document and test the intended behaviour; log at WARNING or above
+- Any configuration required by the external call missing at startup → service refuses to start
 
-**Proxy modifications**
-- `num_ctx` above cap → capped to `PROXY_MAX_CTX`; value below cap → unchanged
-- `think: false` injected when absent; not duplicated when already present
-- System message over `PROXY_MAX_SYSTEM_CHARS` → truncated; under limit → unchanged
-- No system message in request → no truncation applied
+**Request/response transformation logic**
+- Value above a cap/threshold → capped to the defined limit; value at or below cap → unchanged
+- Field injected when absent → present in forwarded request; field already present → not duplicated or overwritten unintentionally
+- Content over a character/byte limit → truncated; content under limit → unchanged
+- Field absent from request → transformation not applied (no error)
 
 **Environment configuration**
-- `PROXY_LISTEN_PORT` unset → proxy exits with non-zero exit code
-- All other `PROXY_*` vars have documented defaults; unset → default applied
+- Required env var unset → service exits with non-zero exit code
+- All optional env vars have documented defaults; unset → default applied and verified
 
-### Pytest conventions for proxy tests
+### Pytest conventions for Python service tests
 ```python
-# Mock Ollama and classifier calls — never make real HTTP calls in unit tests
+# Mock external HTTP calls — never make real network calls in unit tests
 from unittest.mock import patch, MagicMock
 
-# Test fail-open explicitly — this is the most safety-critical behaviour
-def test_classifier_timeout_fails_open(mock_ollama):
-    with patch('proxy.call_classifier', side_effect=TimeoutError):
-        response = send_chat_request(benign_message)
+# Test fail-open / fail-closed explicitly — this is the most safety-critical behaviour
+def test_external_service_timeout_fails_open(mock_upstream):
+    with patch('<service_module>.call_external_service', side_effect=TimeoutError):
+        response = send_request(safe_input)
         assert response.status == 200  # forwarded, not blocked
 
-# Test both sides of every boundary
-def test_num_ctx_at_cap_boundary(mock_ollama):
-    response = send_chat_request(num_ctx=4096)   # at cap — unchanged
-    response = send_chat_request(num_ctx=4097)   # over cap — capped to 4096
+# Test both sides of every threshold boundary
+def test_value_at_cap_boundary():
+    response_at_cap = send_request(value=MAX_VALUE)       # at cap — unchanged
+    response_over_cap = send_request(value=MAX_VALUE + 1) # over cap — capped
 ```
 
 ### Coverage gate
-- Proxy unit tests: ≥80% line coverage (`pytest-cov`)
-- All fail-open paths explicitly tested — coverage alone does not verify fail-open; each must have a named test
+- Python service unit tests: ≥80% line coverage (`pytest-cov`)
+- All fail-open and fail-closed paths explicitly tested — coverage alone does not verify these paths; each must have a named test
 
 ## Contract tests (Pact)
 
@@ -245,7 +245,7 @@ The authoritative Definition of Done is maintained by `scrum-master` in `docs/pr
 - Receive Gherkin acceptance scenarios from `business-analyst` and automate them as the first test layer
 - Coordinate with `backend-developer` on CouchDB fixture design and API error scenarios
 - Coordinate with `frontend-developer` on React Testing Library patterns and Playwright page objects
-- Coordinate with `python-developer` on proxy test suite design, pytest fixtures, and fail-open coverage — `python-developer` writes tests first (TDD); `qa-engineer` reviews, extends, and sets the coverage gate
+- Coordinate with `python-developer` on Python service test suite design, pytest fixtures, and fail-open/fail-closed coverage — `python-developer` writes tests first (TDD); `qa-engineer` reviews, extends, and sets the coverage gate
 - Commission k6 load test baselines for `sre-engineer` SLO calibration
 - Escalate OWASP ZAP findings to `security-engineer`
 - Agree quality gates with `systems-architect` as part of ADR acceptance criteria
