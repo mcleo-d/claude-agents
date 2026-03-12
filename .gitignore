@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverrideIcon?
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Secret scanning baseline
+.secrets.baseline
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
