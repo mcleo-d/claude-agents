@@ -3,7 +3,7 @@ name: Agent improvement
 about: Suggest an improvement to an existing agent
 title: "Improve <agent-name>: <short description>"
 labels: improvement
-assignees: jamesmcleod
+assignees: mcleo-d
 ---
 
 ## Agent

@@ -2,6 +2,29 @@
 
 Thank you for contributing. This collection is only as good as the diversity of experience and perspective that goes into it.
 
+## Development setup
+
+The repository uses pre-commit hooks to mirror the CI checks locally, so issues are caught before they reach the pipeline.
+
+**Prerequisites:** Python 3.x, Node.js (LTS)
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the hooks into your local clone
+pre-commit install
+
+# Run against all files manually (optional)
+pre-commit run --all-files
+```
+
+The hooks run automatically on every `git commit` and check for:
+- **Secret scanning** (`detect-secrets`) — prevents accidental credential commits
+- **Markdown lint** (`markdownlint`) — enforces consistent document structure
+
+CI runs the same checks on every push and pull request.
+
 ## What makes a good agent
 
 Each agent in this collection represents a senior practitioner in their domain. Before contributing, read two or three existing agents to absorb the structural conventions and quality bar. The short version:

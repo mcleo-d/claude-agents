@@ -3,7 +3,7 @@ name: New agent proposal
 about: Propose a new agent role for the collection
 title: "New agent: <role-name>"
 labels: new-agent
-assignees: jamesmcleod
+assignees: mcleo-d
 ---
 
 ## Role name
