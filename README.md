@@ -1,5 +1,7 @@
 # claude-agents
 
+[![CI](https://github.com/mcleo-d/claude-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/mcleo-d/claude-agents/actions/workflows/ci.yml)
+
 A collection of 18 Claude Code subagent definitions that form a complete virtual engineering team. Drop them into your `~/.claude/agents/` directory and Claude Code gains a bench of senior practitioners — each with deep domain expertise, clear accountability to the others, and a shared set of engineering principles.
 
 ## What this is

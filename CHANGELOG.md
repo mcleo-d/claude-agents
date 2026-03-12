@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-03-12
+
+### Added
+- CI workflow (`.github/workflows/ci.yml`) — secret scanning and markdown linting on every push and PR, GitHub Actions pinned to full SHA
+- Pre-commit hooks (`.pre-commit-config.yaml`) — detect-secrets and markdownlint run locally on every commit, mirroring CI
+- Dependabot (`.github/dependabot.yml`) — weekly automated updates for GitHub Actions versions
+- `.markdownlint.json` — lint rules configured to match the agent file conventions
+- `.secrets.baseline` — detect-secrets baseline for the repository
+- Pre-commit setup instructions in `CONTRIBUTING.md`
+- CI status badge in `README.md`
+
+### Fixed
+- `CODEOWNERS` — corrected GitHub username to `@mcleo-d`
+- `README.md` — corrected clone URL and GitHub username references
+- `.github/ISSUE_TEMPLATE/new-agent.md` — corrected assignee to `mcleo-d`
+- `.github/ISSUE_TEMPLATE/agent-improvement.md` — corrected assignee to `mcleo-d`
+
+### Changed
+- `code-reviewer` — added AI/ML configuration review checklist and formal interaction model
+- `deploy-checklist` — added missing interaction model section
+- `ui-designer`, `qa-engineer` — added `fullstack-developer` as a coordination partner
+- `sre-engineer` — added back-references to `scrum-master` and `frontend-developer`
+- `scrum-master` — added `code-reviewer` coordination; adapted environmental and TDD principles
+- `systematic-debugger` — added security escalation path and explicit handoff partner list
+- `devops-engineer`, `platform-engineer` — clarified ArgoCD and OpenTofu ownership boundary
+
 ## [1.0.0] - 2026-03-12
 
 ### Added
