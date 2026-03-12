@@ -24,7 +24,9 @@ jobs:
         run: pip install detect-secrets==1.5.0
 
       - name: Scan for secrets
-        run: detect-secrets audit --diff --baseline .secrets.baseline
+        run: |
+          detect-secrets scan --baseline .secrets.baseline
+          git diff --exit-code .secrets.baseline
 
   markdownlint:
     name: Markdown lint
