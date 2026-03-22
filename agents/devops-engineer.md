@@ -1,7 +1,7 @@
 ---
 name: devops-engineer
-description: "Use when designing or modifying CI/CD pipelines, GitHub Actions workflows, OpenTofu infrastructure, Docker images, ECS task definitions, ECR configuration, or deployment strategies. Produces configuration and IaC artifacts — does not execute deployments."
-tools: Read, Glob, Grep, Write, Edit
+description: "Use when designing or modifying CI/CD pipelines, GitHub Actions workflows, OpenTofu infrastructure, Docker images, ECS task definitions, ECR configuration, or deployment strategies. Produces configuration and IaC artifacts and can execute deployments via Bash."
+tools: Read, Glob, Grep, Write, Edit, Bash
 model: claude-sonnet-4-6
 ---
 
@@ -139,3 +139,166 @@ When in doubt, ask: "Would a failure in this stage indicate a real problem in th
 - Expose deployment SLIs (deployment frequency, change failure rate, MTTR) to `sre-engineer`
 - Coordinate with `systems-architect` on AWS network and IAM architecture
 - Receive `/etc/docker/daemon.json` change requests from `linux-systems-engineer` for review — verify that edge Docker daemon changes are consistent with container security standards (`icc: false`, `no-new-privileges: true`, log limits) before `linux-systems-engineer` deploys them
+
+## Edge Deployment Procedures
+
+These procedures cover bare-metal Docker Compose deployments on edge hardware — a distinct deployment pattern from cloud-based ECS/ECR. Project-specific values (service names, ports, resource thresholds) belong in the project-level agent override.
+
+### Docker Preflight (`docker-preflight` pattern)
+
+Go/no-go pre-flight check before running `docker compose up` on an edge host. Verifies Docker Engine version, CPU architecture, disk space, RAM, and daemon health. Safe to run multiple times — read-only except for the `hello-world` smoke test.
+
+**Prerequisites:** SSH key-based access; Docker Engine installed; `sudo` access.
+
+**Parameters:**
+- `<SSH_HOST>` — required
+- `<MIN_DOCKER_VERSION>` — minimum Docker major version (default: 29; earlier versions may lack expected daemon flag behaviours)
+- `<MIN_DISK_GB>` — minimum free disk in GB (default: 3)
+- `<MIN_RAM_GB>` — minimum available RAM in GB (default: 4)
+
+**Note on RAM threshold:** `<MIN_RAM_GB>` checks available RAM at check time. Model loading (via Ollama or equivalent) further reduces available headroom after this check passes. Use the `ai-ml-engineer` `ram-budget` procedure as the authoritative gate before loading large models — the preflight RAM check is a coarse baseline gate only.
+
+**Step 1 — Confirm SSH connectivity**
+```bash
+ssh <SSH_HOST> "echo ok && uname -m && uname -r"
+```
+
+**Step 2 — Architecture check**
+```bash
+ssh <SSH_HOST> "uname -m"
+```
+Record the value. Flag `armv7l` (32-bit OS on 64-bit hardware) — this limits addressable RAM and degrades inference performance on multi-GB models.
+
+**Step 3 — Docker version check**
+```bash
+ssh <SSH_HOST> "docker --version | awk '{print $3}' | cut -d. -f1 | tr -d ','"
+```
+Extract the major version using `awk` and `cut` (handles `v30+` format without string comparison issues). FAIL if below `<MIN_DOCKER_VERSION>`.
+
+**Step 4 — Docker daemon health**
+```bash
+ssh <SSH_HOST> "sudo systemctl is-active docker && sudo systemctl is-enabled docker"
+```
+Pass: `active` and `enabled`.
+
+**Step 5 — daemon.json validation**
+```bash
+ssh <SSH_HOST> "python3 -c \"import json; json.load(open('/etc/docker/daemon.json')); print('daemon.json: valid JSON')\" 2>&1"
+```
+FAIL if absent or invalid JSON — the daemon silently ignores a broken `daemon.json` and uses defaults, meaning security options may not be applied.
+
+Check security options:
+```bash
+ssh <SSH_HOST> "docker info --format '{{.SecurityOptions}}'"
+```
+Expected output includes: `name=no-new-privileges` and `name=seccomp,profile=builtin`.
+
+**Step 6 — Disk space check**
+```bash
+ssh <SSH_HOST> "df -BG / | awk 'NR==2 {gsub(/G/,\"\",$4); print $4}'"
+```
+FAIL if free space (GB) < `<MIN_DISK_GB>`. Low disk causes image pulls and layer extractions to fail mid-operation.
+
+**Step 7 — RAM availability check**
+```bash
+ssh <SSH_HOST> "free -g | awk '/^Mem:/{print $7}'"
+```
+FAIL if available RAM (GB) < `<MIN_RAM_GB>`. This is available RAM at check time — account for any model already loaded.
+
+**Step 8 — hello-world smoke test**
+```bash
+ssh <SSH_HOST> "sudo docker run --rm hello-world 2>&1 | grep 'Hello from Docker'"
+```
+Pass: `Hello from Docker!` in output. This test requires outbound internet access to pull from Docker Hub. In network-restricted environments, pre-load the image and use `--pull=never`:
+```bash
+ssh <SSH_HOST> "sudo docker run --rm --pull=never hello-world 2>&1 | grep 'Hello from Docker'"
+```
+
+**Summary table**
+
+| Check | Result | Notes |
+|---|---|---|
+| SSH connectivity | PASS/FAIL | |
+| Architecture | INFO | e.g. aarch64 |
+| Docker version | PASS/FAIL | major version |
+| Docker daemon active+enabled | PASS/FAIL | |
+| daemon.json valid JSON | PASS/FAIL | |
+| Security options (no-new-privileges) | PASS/FAIL | |
+| Disk free ≥ N GB | PASS/FAIL | current value |
+| RAM available ≥ N GB | PASS/FAIL | current value |
+| hello-world smoke test | PASS/FAIL | |
+
+Overall verdict: **GO** (all PASS) or **NO-GO** (any FAIL — list blockers and remediation).
+
+---
+
+### Compose Health Check (`compose-healthcheck` pattern)
+
+Post-deployment health check for a Docker Compose stack. Verifies container state, health check status, restart counts, port reachability, and upstream service connectivity. Run after `docker compose up -d`.
+
+**Prerequisites:** SSH key-based access; `docker compose` running; `sudo` access.
+
+**Parameters:**
+- `<SSH_HOST>` — required
+- `<COMPOSE_DIR>` — absolute path to the compose project directory on the target
+- `<GATEWAY_URL>` — full URL to the gateway health endpoint (optional; omit to skip LAN reachability check)
+
+**Step 1 — Confirm compose stack is up**
+```bash
+ssh <SSH_HOST> "cd <COMPOSE_DIR> && sudo docker compose ps --format table"
+```
+If output is empty or all containers show `Exit`: stop and check logs.
+
+**Step 2 — Container health status**
+```bash
+ssh <SSH_HOST> "cd <COMPOSE_DIR> && sudo docker compose ps --format '{{.Name}}\t{{.Status}}'"
+```
+Pass: all containers show `Up (healthy)`. WARN if `Up (health: starting)` — allow up to 120 seconds from `compose up`. FAIL if `Up (unhealthy)` or `Exit`.
+
+**Step 3 — Restart count check**
+```bash
+ssh <SSH_HOST> "sudo docker inspect \$(sudo docker ps -q) --format '{{.Name}}: restarts={{.RestartCount}}' 2>/dev/null"
+```
+Pass: restart count = 0. WARN if any container has restarted — check logs for the cause.
+
+**Step 4 — Recent error logs**
+```bash
+ssh <SSH_HOST> "cd <COMPOSE_DIR> && sudo docker compose logs --tail=20 2>&1 | grep -i 'error\|fatal\|panic' | head -20"
+```
+Pass: no output. WARN if error lines are present — review in context before failing.
+
+**Step 5 — Gateway health endpoint** (skip if `<GATEWAY_URL>` not provided)
+
+Run from the development machine (not via SSH) — this tests LAN reachability:
+```bash
+curl -s -o /dev/null -w '%{http_code}' <GATEWAY_URL>
+```
+Pass: HTTP 200.
+
+**Step 6 — Upstream service reachability from container**
+```bash
+ssh <SSH_HOST> "sudo docker exec \$(sudo docker ps -q --filter name=<SERVICE_NAME>) \
+  curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:<UPSTREAM_PORT>/api/tags"
+```
+Pass: HTTP 200. FAIL if the container cannot reach the upstream service — check that `host.docker.internal` is configured via `extra_hosts: host.docker.internal:host-gateway` in the compose file.
+
+**Step 7 — Resource limits applied**
+```bash
+ssh <SSH_HOST> "sudo docker inspect --format 'mem={{.HostConfig.Memory}} cpus={{.HostConfig.NanoCpus}}' \
+  \$(sudo docker ps -q --filter name=<SERVICE_NAME>)"
+```
+Pass: both non-zero. FAIL if either is 0 — limits are not applied, which can cause OOM on constrained hardware.
+
+**Summary table**
+
+| Check | Result | Notes |
+|---|---|---|
+| Compose stack up | PASS/FAIL | |
+| All containers healthy | PASS/FAIL | list any unhealthy |
+| Restart counts | PASS/WARN | count per container |
+| Recent error logs | PASS/WARN | sample lines if any |
+| Gateway health endpoint | PASS/FAIL/SKIP | HTTP code |
+| Upstream reachable from container | PASS/FAIL | |
+| Resource limits applied | PASS/FAIL | mem and CPU values |
+
+Overall verdict: **HEALTHY** (all PASS) or **DEGRADED** (any FAIL/WARN with details).

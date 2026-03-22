@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+
+- `devops-engineer` — added Bash capability; added Edge Deployment Procedures section with `docker-preflight` and `compose-healthcheck` patterns for bare-metal Docker Compose deployments
+- `linux-systems-engineer` — added Bash capability; added Operational Verification Procedures section with `harden-verify` and `sysctl-drift` patterns for hardened Linux hosts
+- `python-developer` — added Bash capability; added Proxy Verification Procedures section with `proxy-preflight` and `proxy-healthcheck` patterns for stdlib-only Ollama proxy deployments
+- `security-engineer` — added Bash capability; added Bare-Metal and Edge Security Posture Review section with `posture-review` (8-layer) and `credential-audit` patterns
+- `sre-engineer` — added Bash capability for operational checks and diagnostics
+
 ## [1.1.0] - 2026-03-12
 
 ### Added
