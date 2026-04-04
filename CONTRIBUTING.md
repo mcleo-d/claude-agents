@@ -105,6 +105,15 @@ Use the **Agent improvement** issue template. When submitting a PR:
 - Do not weaken security deference or the accessibility-first stance
 - If you are adapting an agent for a specific technology stack, consider whether the change generalises or whether it should live in a fork
 
+### Conciseness guideline
+
+Agent definitions are loaded in full on every spawn. Every line costs tokens. Write for density:
+- Core principles: one sentence per principle, not a paragraph
+- Standards: terse bullet lists, not verbose explanations with code examples
+- Operational procedures: name, 1-line description, parameters, key pass/fail criteria — not step-by-step bash commands
+- Remove preamble, redundant context, and boilerplate that adds lines but not information
+- Target 50-90 lines for most agents. Agents over 120 lines should be reviewed for trimming opportunities
+
 ## Pull request checklist
 
 - [ ] Agent follows the standard structure (frontmatter, opening paragraph, five principles, domain sections, interaction model)

@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- All 13 agents over 100 lines trimmed in-place for token efficiency (3,242 → 1,320 total lines, 59% reduction). Compressed: verbose principles to single sentences, exhaustive checklists to terse bullet lists, step-by-step operational procedures to name + description + parameters + key criteria. No content removed — information density increased.
+- `CONTRIBUTING.md` — added conciseness guideline (target 50-90 lines, operational procedures as summaries not scripts)
 - `devops-engineer` — added Bash capability; added Edge Deployment Procedures section with `docker-preflight` and `compose-healthcheck` patterns for bare-metal Docker Compose deployments
 - `linux-systems-engineer` — added Bash capability; added Operational Verification Procedures section with `harden-verify` and `sysctl-drift` patterns for hardened Linux hosts
 - `python-developer` — added Bash capability; added Proxy Verification Procedures section with `proxy-preflight` and `proxy-healthcheck` patterns for stdlib-only Ollama proxy deployments
