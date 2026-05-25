@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add content-creator agent.
+
 ### Changed
 
 - All 13 agents over 100 lines trimmed in-place for token efficiency (3,242 → 1,320 total lines, 59% reduction). Compressed: verbose principles to single sentences, exhaustive checklists to terse bullet lists, step-by-step operational procedures to name + description + parameters + key criteria. No content removed — information density increased.
