@@ -8,7 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Add technical-writer agent.
+- Add content-creator agent.
+- Add release-notes-writer agent.
 
 ### Changed
 
