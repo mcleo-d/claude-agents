@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `ai-ml-engineer` — narrowed the security escalation gate from a blanket "all injection-detection design decisions" mandate to a risk-based trigger (novel/externally-reachable attack surface, auth/crypto design, plausible data-exfiltration path); routine design decisions now sit within the agent's own judgement, with reasoning recorded.
 - Normalised stale model pins: `code-reviewer`, `security-engineer`, `systematic-debugger`, and `systems-architect` now pin `model: claude-opus-5`; all other agent definitions that pinned a 4-6 era model now read `model: inherit`.
 - All 13 agents over 100 lines trimmed in-place for token efficiency (3,242 → 1,320 total lines, 59% reduction). Compressed: verbose principles to single sentences, exhaustive checklists to terse bullet lists, step-by-step operational procedures to name + description + parameters + key criteria. No content removed — information density increased.
 - `CONTRIBUTING.md` — added conciseness guideline (target 50-90 lines, operational procedures as summaries not scripts)
