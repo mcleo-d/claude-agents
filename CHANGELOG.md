@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add content-creator agent.
 - Add release-notes-writer agent.
 - Add capability audit report for the Fable 5 / Sonnet 5 era (`docs/audits/2026-08-10-capability-audit.md`).
+- Add consolidation and Skills evaluation report for audit items 2, 3, 5 and 6 (`docs/audits/2026-08-11-consolidation-evaluation.md`).
 
 ### Changed
 
