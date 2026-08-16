@@ -25,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `python-developer` — added Bash capability; added Proxy Verification Procedures section with `proxy-preflight` and `proxy-healthcheck` patterns for stdlib-only Ollama proxy deployments
 - `security-engineer` — added Bash capability; added Bare-Metal and Edge Security Posture Review section with `posture-review` (8-layer) and `credential-audit` patterns
 - `sre-engineer` — added Bash capability for operational checks and diagnostics
+- Consolidated `content-creator`, `technical-writer` and `release-notes-writer` into one parameterised `content-writer` agent (ST-415): the five shared sections are written once, the two domain-specific sections are folded into three `## Mode:` subsections (general content, technical documentation, release notes), and every bullet is kept verbatim from its source file.
 
 ## [1.1.0] - 2026-03-12
 
