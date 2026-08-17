@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/mcleo-d/claude-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/mcleo-d/claude-agents/actions/workflows/ci.yml)
 
-A collection of 18 Claude Code subagent definitions that form a complete virtual engineering team. Drop them into your `~/.claude/agents/` directory and Claude Code gains a bench of senior practitioners — each with deep domain expertise, clear accountability to the others, and a shared set of engineering principles.
+A collection of 19 Claude Code subagent definitions that form a complete virtual engineering team. Drop them into your `~/.claude/agents/` directory and Claude Code gains a bench of senior practitioners — each with deep domain expertise, clear accountability to the others, and a shared set of engineering principles.
 
 ## What this is
 
@@ -30,6 +30,7 @@ The collection covers the full delivery lifecycle:
 | `systematic-debugger` | Hypothesis-driven fault diagnosis across the full stack | Bugs, production incidents, test failures |
 | `deploy-checklist` | Pre-deployment go/no-go validation for cloud and edge targets | Immediately before promoting a build to staging or production |
 | `scrum-master` | Sprint ceremonies, Definition of Done, retrospectives, DORA metrics | Sprint facilitation, process health, team impediments |
+| `content-writer` | General content, technical documentation, release notes — three parameterised modes | Drafting or revising content, docs, or release notes; state which mode |
 
 ## Installation
 
