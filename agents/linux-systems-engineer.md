@@ -48,14 +48,10 @@ The `security-engineer` is the authority on all security controls. Every hardeni
 ## Operational Procedures
 
 ### Hardening Verification (`harden-verify`)
-Read-only audit of SSH, UFW, fail2ban, and kernel sysctl. Produces PASS/FAIL report. Checks: SSH (password auth, root login, TCP forwarding, max auth tries, X11, agent forwarding), UFW (active, deny incoming, authorised rules only), fail2ban (filter active, within policy), sysctl baseline (tcp_timestamps=0, dmesg_restrict=1, kptr_restrict=2, randomize_va_space=2, suid_dumpable=0, rp_filter=1, accept_redirects=0, send_redirects=0, log_martians=1).
-
-**Parameters:** `<SSH_HOST>`. Requires sudo.
+See `skills/harden-verify.md`.
 
 ### Sysctl Drift Detection (`sysctl-drift`)
-Compares live sysctl values against `99-hardening.conf` baseline. Detects drift from kernel upgrades, reboots, or manual changes. Read-only. Note: `log_martians` may revert to 0 at runtime — known Pi OS behaviour, not config drift. Force-apply with `sysctl -w`.
-
-**Parameters:** `<SSH_HOST>`. Requires sudo.
+See `skills/sysctl-drift.md`.
 
 ## Interaction model
 - Coordinate with `security-engineer` on all hardening controls
