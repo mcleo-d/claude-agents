@@ -87,6 +87,15 @@ The `security-engineer` agent is the authority on security design decisions acro
 - Do not design security controls unilaterally within another agent
 - If your agent may discover security issues during its work (e.g., a debugger finding a vulnerability), include an explicit security escalation instruction
 
+## Skills convention
+
+`skills/` holds named, parameterised, independently invocable procedures that do not depend on a specific agent's persona or voice to run — as distinct from the open-ended principles and standards that stay in `agents/`. A procedure belongs in `skills/` when it has its own `name`, a one-line description, an explicit `**Parameters:**` line, and pass/fail criteria that are meaningful without the surrounding persona.
+
+- One file per Skill: `skills/<skill-name>.md`, named after the Skill's kebab-case identifier (matching the backtick name used in the owning agent, e.g. `harden-verify` → `skills/harden-verify.md`).
+- Each Skill file states its owning agent, its parameters, its pass/fail criteria, and a **guardrail pointer**: an explicit reference back to the owning agent's accountability rule (a line in that agent's `## Core principles`, `## Security accountability`, or `## Interaction model`) so the check's escalation path is not lost outside the persona that originally carried it.
+- The owning agent's own file keeps the Skill's heading (for discoverability and consistent cross-referencing) but replaces the embedded procedure body with a one-line reference to the `skills/` file — it must not duplicate the full definition.
+- Extracting a procedure into `skills/` does not change who owns escalation for it: the guardrail pointer in the Skill file is binding, not descriptive.
+
 ## Proposing a new agent
 
 Before writing a new agent, open an issue using the **New agent** template. This gives the community a chance to discuss whether the role is genuinely distinct from existing agents and what its boundaries should be.
@@ -124,6 +133,7 @@ Agent definitions are loaded in full on every spawn. Every line costs tokens. Wr
 - [ ] Security deference is explicit if the agent touches security concerns
 - [ ] No project-specific references (internal tool names, URLs, file paths, port numbers, model names tied to a specific deployment)
 - [ ] No `<your-value>` placeholders left unfilled in non-template content
+- [ ] If the agent embeds a named, parameterised procedure, consider whether it belongs in `skills/` instead (see Skills convention)
 - [ ] CHANGELOG.md updated under `[Unreleased]`
 
 ## Licence

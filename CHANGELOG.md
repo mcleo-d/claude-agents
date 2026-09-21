@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add `skills/` directory (ST-411 item 6): extracted the six named Procedures (`harden-verify`, `sysctl-drift`, `docker-preflight`, `compose-healthcheck`, `posture-review`, `credential-audit`) from `linux-systems-engineer`, `devops-engineer` and `security-engineer` into one file per Skill, each carrying its parameters, pass/fail criteria and a guardrail pointer back to the owning agent's accountability rule; the three owning agents now reference each Skill from its heading instead of embedding the full definition. `CONTRIBUTING.md` gains a Skills convention section.
 - Add content-creator agent.
 - Add release-notes-writer agent.
 - Add capability audit report for the Fable 5 / Sonnet 5 era (`docs/audits/2026-08-10-capability-audit.md`).

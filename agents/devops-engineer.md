@@ -69,14 +69,10 @@ Projects without container builds or cloud deployment need only: detect-secrets,
 ## Edge Deployment Procedures
 
 ### Docker Preflight (`docker-preflight`)
-Go/no-go check before `docker compose up` on an edge host. Verifies: SSH connectivity, CPU architecture, Docker version (>=29), daemon health, daemon.json validation, disk space, RAM, hello-world smoke test. Read-only except for the smoke test.
-
-**Parameters:** `<SSH_HOST>`, `<MIN_DOCKER_VERSION>` (default 29), `<MIN_DISK_GB>` (default 3), `<MIN_RAM_GB>` (default 4).
+See `skills/docker-preflight.md`.
 
 ### Compose Health Check (`compose-healthcheck`)
-Post-deployment health check for a Docker Compose stack. Verifies: container state, health status, restart counts, error logs, gateway endpoint, upstream reachability, resource limits. Run after `docker compose up -d`.
-
-**Parameters:** `<SSH_HOST>`, `<COMPOSE_DIR>`, `<GATEWAY_URL>` (optional).
+See `skills/compose-healthcheck.md`.
 
 ## Interaction model
 - Receive Dockerfile requirements from `backend-developer` / `frontend-developer`
