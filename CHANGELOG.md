@@ -27,6 +27,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `security-engineer` — added Bash capability; added Bare-Metal and Edge Security Posture Review section with `posture-review` (8-layer) and `credential-audit` patterns
 - `sre-engineer` — added Bash capability for operational checks and diagnostics
 - Consolidated `content-creator`, `technical-writer` and `release-notes-writer` into one parameterised `content-writer` agent (ST-415): the five shared sections are written once, the two domain-specific sections are folded into three `## Mode:` subsections (general content, technical documentation, release notes), and every bullet is kept verbatim from its source file.
+- `sync-agents.sh` and `check-drift.sh` (ST-413): rollback now prunes exactly what the previous tag owned. `sync-agents.sh` writes an atomic `.agents-manifest` (tag + installed files) into the install directory on every successful sync; repointing to a tag that drops files moves those orphans (never unlinks) to a dated `<install-dir>.pruned.<tag>.<timestamp>` backup, reporting each move by name (zero moves reported as zero). Files never listed in any manifest are unmanaged and untouched. `check-drift.sh` gains a manifest-aware drift line: a file the manifest lists as installed but that is actually absent is named drift, never silent; unmanaged-file reporting is unchanged.
 
 ### Removed
 

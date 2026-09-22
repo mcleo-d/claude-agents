@@ -4,11 +4,16 @@
 # Usage: bash scripts/sync-agents.sh [--target DIR] [--dry-run]
 #
 # Reads the tag named in the pin file, fetches it, and copies every definition
-# at that tag into the install directory. Files present locally but absent from
-# the tag are left alone: this script adds and updates, it never deletes, so an
-# unmanaged local definition survives a sync and is reported by check-drift.sh.
+# at that tag into the install directory. A manifest of tag-owned files
+# (.agents-manifest, in the install directory) is written on every successful
+# sync. On the next sync, files the manifest says the PREVIOUS tag owned but
+# the NEW tag no longer does are pruned: moved (never unlinked) to a dated
+# backup directory outside the install. A file that has never appeared in any
+# manifest is unmanaged and is never touched, pruned or otherwise.
 #
-# Rollback: edit the pin file to name a prior tag and run this again.
+# Rollback: edit the pin file to name a prior tag and run this again. Prune
+# now makes rollback exact: the install ends up holding precisely the prior
+# tag's file set, with anything the newer tag had added moved out.
 #
 # Exit codes: 0 = installed, 2 = configuration error.
 #
@@ -59,10 +64,45 @@ BACKUP="${TARGET}.pre-${TAG}.$(date -u +%Y%m%dT%H%M%SZ)"
 cp -R "${TARGET}" "${BACKUP}"
 echo "backup: ${BACKUP}"
 
+NEW_FILES="$(git -C "${REPO_DIR}" ls-tree -r --name-only "${TAG}" -- agents/ | grep '\.md$' | xargs -n1 basename | sort)"
+
 COUNT=0
-while IFS= read -r path; do
-  git -C "${REPO_DIR}" show "${TAG}:${path}" > "${TARGET}/$(basename "${path}")"
+while IFS= read -r base; do
+  git -C "${REPO_DIR}" show "${TAG}:agents/${base}" > "${TARGET}/${base}"
   COUNT=$((COUNT + 1))
-done < <(git -C "${REPO_DIR}" ls-tree -r --name-only "${TAG}" -- agents/ | grep '\.md$')
+done <<< "${NEW_FILES}"
 
 echo "installed ${COUNT} definitions at ${TAG} (${SHA}) into ${TARGET}"
+
+# Prune what the PREVIOUS manifest says was tag-owned but the new tag no
+# longer owns. Never touches a file absent from every manifest (unmanaged).
+MANIFEST="${TARGET}/.agents-manifest"
+PREV_FILES=""
+[ -f "${MANIFEST}" ] && PREV_FILES="$(tail -n +2 "${MANIFEST}")"
+
+PRUNED=0
+if [ -n "${PREV_FILES}" ]; then
+  while IFS= read -r base; do
+    [ -z "${base}" ] && continue
+    printf '%s\n' "${NEW_FILES}" | grep -qx "${base}" && continue
+    [ -f "${TARGET}/${base}" ] || continue
+    if [ "${PRUNED}" -eq 0 ]; then
+      PRUNE_BACKUP="${TARGET}.pruned.${TAG}.$(date -u +%Y%m%dT%H%M%SZ)"
+      mkdir -p "${PRUNE_BACKUP}"
+    fi
+    mv "${TARGET}/${base}" "${PRUNE_BACKUP}/${base}"
+    echo "pruned: ${base} -> ${PRUNE_BACKUP}/${base}"
+    PRUNED=$((PRUNED + 1))
+  done <<< "${PREV_FILES}"
+fi
+echo "pruned ${PRUNED} file(s) no longer owned by ${TAG}"
+
+# Manifest write is the last step and is atomic: temp file in the same
+# directory, then rename, so a crash mid-sync never leaves a half-written
+# manifest for the next run to trust.
+MANIFEST_TMP="$(mktemp "${TARGET}/.agents-manifest.XXXXXX")"
+{
+  echo "tag=${TAG}"
+  printf '%s\n' "${NEW_FILES}"
+} > "${MANIFEST_TMP}"
+mv "${MANIFEST_TMP}" "${MANIFEST}"
