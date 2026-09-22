@@ -15,6 +15,12 @@
 # unmanaged; they are reported on their own line and are never deleted, because
 # this script reports drift and does not repair it.
 #
+# Manifest-aware: if the install has a .agents-manifest (written by
+# sync-agents.sh), any file the manifest lists as installed but that is no
+# longer actually present counts as drift and is named on its own line. This
+# is never silent, even when the missing file also happens to fall outside
+# the pin's current tag.
+#
 # Exit codes: 0 = in sync, 1 = drift detected, 2 = configuration error.
 #
 # Environment:
@@ -109,11 +115,23 @@ for f in "${TARGET}"/*.md; do
   git -C "${REPO_DIR}" cat-file -e "${TAG}:agents/${base}" 2>/dev/null || EXTRA="${EXTRA} ${base}"
 done
 
+MANIFEST="${TARGET}/.agents-manifest"
+MANIFEST_ABSENT=""
+if [ -f "${MANIFEST}" ]; then
+  while IFS= read -r base; do
+    [ -z "${base}" ] && continue
+    [ -f "${TARGET}/${base}" ] || { MANIFEST_ABSENT="${MANIFEST_ABSENT} ${base}"; N=$((N + 1)); }
+  done < <(tail -n +2 "${MANIFEST}")
+fi
+
 echo "surface: ${SURFACE}  install: ${TARGET}  pin: ${TAG} (${SHA})"
 [ -n "${MISSING}" ] && echo "missing:${MISSING}"
 [ -n "${DIFFERS}" ] && echo "differs:${DIFFERS}"
 if [ -n "${EXTRA}" ]; then
   echo "unmanaged (present locally, not in ${TAG}, not counted, never deleted):${EXTRA}"
+fi
+if [ -n "${MANIFEST_ABSENT}" ]; then
+  echo "manifest-drift (listed in manifest, absent from install):${MANIFEST_ABSENT}"
 fi
 
 if [ "${N}" -eq 0 ]; then
