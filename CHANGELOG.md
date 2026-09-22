@@ -33,6 +33,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `londonjs-content-creator` agent (ST-411 item 3): relocated unchanged (`model: inherit` preserved) to `mcleo-d/london-js-slides`, its single documented consumer, as the only definition in this roster scoped to a single external community rather than a generic engineering role.
 
+### Fixed
+
+- README.md headline agent count re-verified against the tree (ST-422): `ls agents/*.md | wc -l` at HEAD `13ff9dee` returns 19, matching both the agent table (19 rows) and the existing headline numeral, so no numeral edit was required. The mismatch reported by the ST-415 merge tap (headline read 19 against 20 files at merge SHA `8ed24bd`) had already been resolved before this Story executed, as a side effect of ST-411 relocating `londonjs-content-creator` out of `agents/`.
+
 ## [1.1.0] - 2026-03-12
 
 ### Added
